@@ -1,6 +1,7 @@
 import 'package:alram_app/constants/app_colors.dart';
 import 'package:alram_app/constants/fonts.dart';
 import 'package:alram_app/features/views/home_page.dart';
+import 'package:alram_app/helpers/location_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -10,6 +11,9 @@ class LocationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locationController = Get.put(
+      LocationController(),
+    ); // inject controller
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
@@ -62,8 +66,8 @@ class LocationPage extends StatelessWidget {
                 width: double.infinity,
                 height: height * 0.065,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Handle location permission + fetch logic
+                  onPressed: () async {
+                    locationController.getPermissionAndLocation();
                   },
                   icon: Icon(Iconsax.location, size: width * 0.06),
                   label: Text("Use Current Location", style: AppFonts.button),
@@ -77,6 +81,12 @@ class LocationPage extends StatelessWidget {
                 ),
               ),
 
+              Obx(
+                () => Text(
+                  locationController.address.value,
+                  style: AppFonts.smallLabel,
+                ),
+              ),
               SizedBox(height: height * 0.015),
 
               // Home button

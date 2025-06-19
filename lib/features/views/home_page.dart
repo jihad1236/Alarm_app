@@ -1,5 +1,8 @@
 import 'package:alram_app/constants/fonts.dart';
+import 'package:alram_app/helpers/location_service.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 
@@ -40,6 +43,7 @@ class _HomePageState extends State<HomePage> {
     return DateFormat('EEE dd MMM yyyy').format(date);
   }
 
+  final locationController = Get.put(LocationController());
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -65,9 +69,11 @@ class _HomePageState extends State<HomePage> {
                 const Icon(Iconsax.location, size: 18, color: Colors.white70),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    "79 Regent's Park Rd, London\nNW1 8UY, United Kingdom",
-                    style: AppFonts.smallLabel,
+                  child: Obx(
+                    () => Text(
+                      locationController.address.value,
+                      style: AppFonts.smallLabel,
+                    ),
                   ),
                 ),
               ],
