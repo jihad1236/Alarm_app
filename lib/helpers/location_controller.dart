@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 class LocationController extends GetxController {
   RxString locationMessage = "Press button to get location".obs;
   RxString address = "No address yet".obs;
+  RxBool isgaranted = false.obs;
 
   Future<void> getPermissionAndLocation() async {
     try {
@@ -37,6 +38,7 @@ class LocationController extends GetxController {
         address.value =
             "${place.name}, ${place.locality}, ${place.postalCode}, ${place.country}";
       }
+      isgaranted = true.obs;
     } catch (e) {
       locationMessage.value = "Error: ${e.toString()}";
       address.value = "Unable to get address.";

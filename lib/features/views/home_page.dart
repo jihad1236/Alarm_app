@@ -1,5 +1,6 @@
 import 'package:alram_app/constants/fonts.dart';
-import 'package:alram_app/helpers/location_service.dart';
+import 'package:alram_app/helpers/location_controller.dart';
+import 'package:alram_app/helpers/notification_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -44,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   final locationController = Get.put(LocationController());
+  final notificationController = Get.put(NotificationController());
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;

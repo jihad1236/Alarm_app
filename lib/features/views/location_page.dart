@@ -1,7 +1,8 @@
 import 'package:alram_app/constants/app_colors.dart';
 import 'package:alram_app/constants/fonts.dart';
 import 'package:alram_app/features/views/home_page.dart';
-import 'package:alram_app/helpers/location_service.dart';
+import 'package:alram_app/helpers/location_controller.dart';
+import 'package:alram_app/helpers/notification_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -14,6 +15,7 @@ class LocationPage extends StatelessWidget {
     final locationController = Get.put(
       LocationController(),
     ); // inject controller
+    final notificationController = Get.put(NotificationController());
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
@@ -67,8 +69,23 @@ class LocationPage extends StatelessWidget {
                 height: height * 0.065,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    locationController.getPermissionAndLocation();
+                    // ✅ Wait for permission and location fetch
+                    await locationController.getPermissionAndLocation();
+
+                    // ✅ Show notification only if permission granted and address is fetched
+                    if (locationController.isgaranted.value &&
+                        locationController.address.value.isNotEmpty) {
+                      await notificationController.showInstantNotification(
+                        id: 1,
+                        title: "My Current Location",
+                        body: locationController.address.value,
+                      );
+                    }
+
+                    // ✅ Navigate to next screen regardless
+                    Get.to(const HomePage());
                   },
+
                   icon: Icon(Iconsax.location, size: width * 0.06),
                   label: Text("Use Current Location", style: AppFonts.button),
                   style: ElevatedButton.styleFrom(
