@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationController extends GetxController {
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
@@ -89,34 +90,6 @@ class NotificationController extends GetxController {
     );
   }
 
-  // /// ⏰ Schedule a notification (example: 5 seconds later)
-  // Future<void> scheduleNotification({
-  //   required int id,
-  //   required String title,
-  //   required String body,
-  //   required DateTime scheduledTime,
-  // }) async {
-  //   await flutterLocalNotificationsPlugin.zonedSchedule(
-  //     id,
-  //     title,
-  //     body,
-  //     tz.TZDateTime.from(scheduledTime, tz.local),
-  //     const NotificationDetails(
-  //       android: AndroidNotificationDetails(
-  //         'custom_sound_channel',
-  //         'Custom Sound Channel',
-  //         playSound: true,
-  //         importance: Importance.high,
-  //         priority: Priority.high,
-  //         sound: RawResourceAndroidNotificationSound('notification_sound'),
-  //       ),
-  //     ),
-  //     androidAllowWhileIdle: true,
-  //     uiLocalNotificationDateInterpretation:
-  //         UILocalNotificationDateInterpretation.absoluteTime,
-  //   );
-  // }
-
   /// ✅ Ask for notification permission
   Future<void> requestNotificationPermission() async {
     if (Platform.isAndroid) {
@@ -125,5 +98,30 @@ class NotificationController extends GetxController {
         await Permission.notification.request();
       }
     }
+  }
+
+  Future<void> shedule_alarm(
+    int id,
+    String title,
+    String? body,
+    DateTime dateTime,
+  ) async {
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      tz.TZDateTime.from(dateTime, tz.local),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'alarm_channel',
+          'Alarm Channel',
+          channelDescription: 'Channel for scheduled alarms',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dateAndTime,
+    );
   }
 }

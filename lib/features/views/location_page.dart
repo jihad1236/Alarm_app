@@ -71,6 +71,7 @@ class LocationPage extends StatelessWidget {
                   onPressed: () async {
                     // ✅ Wait for permission and location fetch
                     await locationController.getPermissionAndLocation();
+                    await locationController.initializeTimezoneFromDevice();
 
                     // ✅ Show notification only if permission granted and address is fetched
                     if (locationController.isgaranted.value &&

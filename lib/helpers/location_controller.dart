@@ -4,6 +4,9 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class LocationController extends GetxController {
   RxString locationMessage = "Press button to get location".obs;
@@ -42,6 +45,22 @@ class LocationController extends GetxController {
     } catch (e) {
       locationMessage.value = "Error: ${e.toString()}";
       address.value = "Unable to get address.";
+    }
+  }
+
+  Future<void> initializeTimezoneFromDevice() async {
+    try {
+      // Get timezone name from device
+      final String timezoneName = await FlutterTimezone.getLocalTimezone();
+
+      print("🕒 Detected Timezone: $timezoneName");
+
+      // Initialize timezone package and set local location
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation(timezoneName));
+    } catch (e) {
+      print("❌ Failed to get timezone: $e");
+      rethrow;
     }
   }
 }

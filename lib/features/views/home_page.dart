@@ -1,9 +1,9 @@
 import 'package:alram_app/constants/fonts.dart';
+import 'package:alram_app/helpers/alarm_controller.dart';
 import 'package:alram_app/helpers/location_controller.dart';
 import 'package:alram_app/helpers/notification_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 
@@ -15,41 +15,68 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Dummy alarm data with switch state
-  List<Map<String, dynamic>> alarms = [
-    {
-      'time': TimeOfDay(hour: 19, minute: 10),
-      'date': DateTime(2025, 3, 21),
-      'enabled': true,
-    },
-    {
-      'time': TimeOfDay(hour: 18, minute: 55),
-      'date': DateTime(2025, 3, 28),
-      'enabled': true,
-    },
-    {
-      'time': TimeOfDay(hour: 19, minute: 00),
-      'date': DateTime(2025, 4, 4),
-      'enabled': true,
-    },
-  ];
-
-  String formatTime(TimeOfDay time) {
-    final now = DateTime.now();
-    final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute);
-    return DateFormat.jm().format(dt);
-  }
+  final locationController = Get.put(LocationController());
+  final notificationController = Get.put(NotificationController());
+  final alarmController = Get.put(AlarmController());
 
   String formatDate(DateTime date) {
     return DateFormat('EEE dd MMM yyyy').format(date);
   }
 
-  final locationController = Get.put(LocationController());
-  final notificationController = Get.put(NotificationController());
+  String formatTime(DateTime date) {
+    return DateFormat.jm().format(date);
+  }
+
+  Future<void> pickDateTime() async {
+    final now = DateTime.now();
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime == null) return;
+
+    final scheduledDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    // Save alarm to SQLite
+    await alarmController.addAlarm(
+      DateFormat.jm().format(scheduledDateTime),
+      scheduledDateTime
+          .toIso8601String(), // use ISO string to avoid parse errors
+    );
+
+    // Schedule local notification
+    notificationController.shedule_alarm(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000), // unique ID
+      'Alarm',
+      'It\'s time!',
+      scheduledDateTime,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    alarmController.loadAlarms();
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -57,7 +84,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.black,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(''),
+        title: const Text(""),
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: width * 0.06),
@@ -87,9 +114,7 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Add alarm logic
-                },
+                onPressed: pickDateTime,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white12,
                   foregroundColor: Colors.white,
@@ -108,49 +133,55 @@ class _HomePageState extends State<HomePage> {
 
             // Alarm List
             Expanded(
-              child: ListView.separated(
-                itemCount: alarms.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final alarm = alarms[index];
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.white12,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        // Time
-                        Text(
-                          formatTime(alarm['time']),
-                          style: AppFonts.headingLarge,
-                        ),
-                        const Spacer(),
-
-                        // Date
-                        Text(
-                          formatDate(alarm['date']),
-                          style: AppFonts.smallLabel,
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Switch
-                        Switch(
-                          value: alarm['enabled'],
-                          onChanged: (value) {
-                            setState(() {
-                              alarms[index]['enabled'] = value;
-                            });
-                          },
-                          activeColor: Colors.deepPurpleAccent,
-                        ),
-                      ],
+              child: Obx(() {
+                final alarms = alarmController.alarms;
+                if (alarms.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "No alarms set.",
+                      style: TextStyle(color: Colors.white54),
                     ),
                   );
-                },
-              ),
+                }
+                return ListView.separated(
+                  itemCount: alarms.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final alarm = alarms[index];
+                    final time = alarm['time'];
+                    final date = alarm['date'];
+                    final isEnabled = alarm['enabled'] == 1;
+                    final alarmId = alarm['id'];
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(time, style: AppFonts.headingLarge),
+                          const Spacer(),
+                          Text(
+                            formatDate(DateTime.parse(date)),
+                            style: AppFonts.smallLabel,
+                          ),
+                          const SizedBox(width: 12),
+                          Switch(
+                            value: isEnabled,
+                            onChanged: (value) {
+                              alarmController.toggleAlarm(alarmId, value);
+                            },
+                            activeColor: Colors.deepPurpleAccent,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
             ),
           ],
         ),
